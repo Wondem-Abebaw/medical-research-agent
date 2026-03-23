@@ -25,9 +25,6 @@ sqlalchemy==2.0.25
 python-dotenv==1.0.0
 httpx==0.26.0
 
-# CORS
-python-cors==1.0.0
-
 # Async
 aiohttp==3.9.1
 
