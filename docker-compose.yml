@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: medical-research-agent-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - GOOGLE_API_KEY=AIzaSyDoZy9K4XsZwCqm44NwwKEGVCaJoC-Nv_E
+      - TAVILY_API_KEY=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
+      - PUBMED_EMAIL=wondem5060@gmail.com
+      - MODEL_NAME=${MODEL_NAME:-gemini-1.5-flash}
+      - DEBUG=${DEBUG:-false}
+    env_file:
+      - ./backend/.env
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - medical-research-network
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: medical-research-agent-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+    networks:
+      - medical-research-network
+
+networks:
+  medical-research-network:
+    driver: bridge
+
+volumes:
+  backend-data:
+    driver: local
