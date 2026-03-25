@@ -10,8 +10,8 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - GOOGLE_API_KEY=AIzaSyDoZy9K4XsZwCqm44NwwKEGVCaJoC-Nv_E
-      - TAVILY_API_KEY=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
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - TAVILY_API_KEY=${TAVILY_API_KEY}
       - PUBMED_EMAIL=wondem5060@gmail.com
       - MODEL_NAME=${MODEL_NAME:-gemini-1.5-flash}
       - DEBUG=${DEBUG:-false}

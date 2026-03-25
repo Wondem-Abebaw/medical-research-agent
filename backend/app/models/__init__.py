@@ -1,41 +1,30 @@
 """
-Pydantic models for API request/response validation.
+Pydantic models for the Medical Research Agent API.
 """
 from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
-from datetime import datetime
+from typing import List, Optional, Dict, Any
 from enum import Enum
+from datetime import datetime
 
 
 class QueryType(str, Enum):
-    """Type of medical query."""
-    LITERATURE_SEARCH = "literature_search"
-    CLINICAL_TRIAL = "clinical_trial"
-    DRUG_INTERACTION = "drug_interaction"
-    CLINICAL_QUESTION = "clinical_question"
-    GENERAL = "general"
+    """Types of medical queries."""
+    literature_search = "literature_search"
+    drug_interaction = "drug_interaction"
+    clinical_question = "clinical_question"
+    general = "general"
 
 
 class AgentRequest(BaseModel):
     """Request model for agent queries."""
-    query: str = Field(..., description="User's medical research question", min_length=3)
-    query_type: Optional[QueryType] = Field(None, description="Type of query (auto-detected if not provided)")
-    session_id: Optional[str] = Field(None, description="Session ID for conversation history")
-    max_results: Optional[int] = Field(5, description="Maximum number of results to return", ge=1, le=20)
-    include_citations: bool = Field(True, description="Include source citations in response")
-    
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "query": "What are the latest treatments for Alzheimer's disease?",
-                "query_type": "literature_search",
-                "max_results": 5
-            }
-        }
+    query: str = Field(..., description="The medical research question")
+    max_results: int = Field(default=5, description="Maximum results per source")
+    include_citations: bool = Field(default=True, description="Include source citations")
+    session_id: Optional[str] = Field(default=None, description="Session ID for conversation continuity")
 
 
 class SourceCitation(BaseModel):
-    """Citation information for sources."""
+    """Citation information for a source."""
     title: str
     authors: Optional[List[str]] = None
     journal: Optional[str] = None
@@ -47,77 +36,42 @@ class SourceCitation(BaseModel):
 
 
 class AgentStep(BaseModel):
-    """Individual step in agent execution."""
+    """A step in the agent's reasoning process."""
     step_number: int
     action: str
     tool_name: Optional[str] = None
     tool_input: Optional[Dict[str, Any]] = None
     observation: Optional[str] = None
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: Optional[str] = Field(default_factory=lambda: datetime.utcnow().isoformat())
 
 
 class AgentResponse(BaseModel):
-    """Response model from agent."""
+    """Response model from the agent."""
     query: str
     answer: str
     query_type: QueryType
     sources: List[SourceCitation] = []
     steps: List[AgentStep] = []
     execution_time: float
-    session_id: Optional[str] = None
+    session_id: str
     error: Optional[str] = None
-    
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "query": "What are the side effects of metformin?",
-                "answer": "Metformin commonly causes gastrointestinal side effects...",
-                "query_type": "drug_interaction",
-                "sources": [],
-                "steps": [],
-                "execution_time": 3.45
-            }
-        }
-
-
-class HealthCheckResponse(BaseModel):
-    """Health check response."""
-    status: str
-    version: str
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
-    services: Dict[str, str] = {}
 
 
 class PubMedArticle(BaseModel):
     """PubMed article information."""
     pmid: str
     title: str
-    authors: List[str] = []
-    abstract: Optional[str] = None
-    journal: Optional[str] = None
-    publication_date: Optional[str] = None
+    authors: List[str]
+    abstract: str
+    journal: str
+    publication_date: str
     doi: Optional[str] = None
     url: str
-    
-    @property
-    def citation(self) -> SourceCitation:
-        """Convert to SourceCitation format."""
-        return SourceCitation(
-            title=self.title,
-            authors=self.authors,
-            journal=self.journal,
-            publication_date=self.publication_date,
-            pubmed_id=self.pmid,
-            doi=self.doi,
-            url=self.url,
-            snippet=self.abstract[:200] + "..." if self.abstract and len(self.abstract) > 200 else self.abstract
-        )
 
 
 class DrugInteraction(BaseModel):
     """Drug interaction information."""
-    drug1: str
-    drug2: Optional[str] = None
-    severity: Optional[str] = None
-    description: str
+    drug_name: str
+    interactions: List[Dict[str, Any]]
+    adverse_events: List[Dict[str, Any]]
     source: str

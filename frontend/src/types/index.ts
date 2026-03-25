@@ -11,10 +11,9 @@ export type QueryType =
 
 export interface AgentRequest {
   query: string;
-  query_type?: QueryType;
-  session_id?: string;
   max_results?: number;
   include_citations?: boolean;
+  session_id?: string | null;
 }
 
 export interface SourceCitation {
@@ -41,11 +40,11 @@ export interface AgentStep {
 export interface AgentResponse {
   query: string;
   answer: string;
-  query_type: QueryType;
+  query_type: string;
   sources: SourceCitation[];
   steps: AgentStep[];
   execution_time: number;
-  session_id?: string;
+  session_id: string;
   error?: string;
 }
 

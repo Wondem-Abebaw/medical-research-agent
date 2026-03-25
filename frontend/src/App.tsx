@@ -2,13 +2,16 @@
  * Main App component
  */
 import React, { useEffect, useState } from 'react';
-import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Loader2, TrendingUp } from 'lucide-react';
 import ChatInterface from './components/ChatInterface';
 import apiService from './services/api';
+import WorkflowDiagram from './components/WorkflowDiagram';
 
 function App() {
   const [healthStatus, setHealthStatus] = useState<'checking' | 'healthy' | 'unhealthy'>('checking');
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [view, setView] = useState<'chat' | 'diagram'>('chat');
+
 
   useEffect(() => {
     checkHealth();
@@ -74,8 +77,56 @@ function App() {
   }
 
   return (
-    <div className="App">
-      <ChatInterface />
+   <div className="min-h-screen bg-gray-50">
+      <header className="bg-white border-b">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+             <div className="max-w-6xl">
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <div className="w-8 h-8 bg-gradient-to-br from-primary-600 to-medical-600 rounded-lg flex items-center justify-center">
+              <TrendingUp className="w-5 h-5 text-white" />
+            </div>
+            Medical Research Agent
+          </h1>
+          <p className="text-sm text-gray-600 mt-1">
+            AI-powered medical research assistant with PubMed, drug databases,
+            and clinical knowledge
+          </p>
+        </div>
+            
+            <nav className="flex gap-4">
+              <button
+                onClick={() => setView('chat')}
+                className={`px-4 py-2 rounded ${
+                  view === 'chat' 
+                    ? 'bg-indigo-600 text-white' 
+                    : 'bg-gray-200'
+                }`}
+              >
+                Chat
+              </button>
+              <button
+                onClick={() => setView('diagram')}
+                className={`px-4 py-2 rounded ${
+                  view === 'diagram' 
+                    ? 'bg-indigo-600 text-white' 
+                    : 'bg-gray-200'
+                }`}
+              >
+                Workflow
+              </button>
+            </nav>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        {view === 'chat' ? (
+          <ChatInterface />
+        ) : (
+          <WorkflowDiagram />
+        )}
+      </main>
     </div>
   );
 }

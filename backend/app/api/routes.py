@@ -1,70 +1,55 @@
 """
-FastAPI routes for medical research agent.
+API routes for the Medical Research Agent.
 """
 from fastapi import APIRouter, HTTPException, status
-from fastapi.responses import StreamingResponse
-import json
-import asyncio
-from datetime import datetime
-from typing import AsyncGenerator
+from typing import Dict, Any
 
 from app.models import (
     AgentRequest,
     AgentResponse,
-    HealthCheckResponse,
-    QueryType,
+    SourceCitation,
     AgentStep,
-    SourceCitation
+    QueryType
 )
 from app.agents import get_agent
-from app.core.config import settings
-
+from app.core.memory import memory
+from fastapi.responses import Response, FileResponse
+import tempfile
 
 router = APIRouter()
 
 
-@router.get("/health", response_model=HealthCheckResponse)
-async def health_check():
+@router.get("/ping")
+async def ping() -> Dict[str, str]:
     """Health check endpoint."""
-    agent = get_agent()
-    
-    return HealthCheckResponse(
-        status="healthy",
-        version=settings.app_version,
-        services={
-            "agent": "running",
-            "google_ai": "configured" if settings.google_api_key else "not configured",
-            "tavily": "configured" if settings.tavily_api_key else "not configured"
-        }
-    )
+    return {"status": "healthy", "message": "Medical Research Agent API is running"}
 
 
 @router.post("/query", response_model=AgentResponse)
 async def query_agent(request: AgentRequest):
-    """
-    Query the medical research agent.
-    
-    This endpoint processes medical research questions and returns comprehensive answers
-    with citations from PubMed, drug databases, and trusted medical websites.
-    """
+    """Query the medical research agent with conversation history."""
     try:
-        # Get agent instance
-        agent = get_agent()
+        session_id = memory.get_or_create_session(request.session_id)
+        history = memory.get_history(session_id, last_n=4)
         
-        # Run agent
+        memory.add_message(session_id, "user", request.query)
+        
+        agent = get_agent()
         result = agent.run(
             query=request.query,
-            max_results=request.max_results
+            max_results=request.max_results,
+            conversation_history=history
         )
         
-        # Handle errors
+        if result.get("answer"):
+            memory.add_message(session_id, "assistant", result["answer"])
+        
         if result.get("error"):
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=result["error"]
             )
         
-        # Convert sources to SourceCitation models
         sources = []
         for source in result.get("sources", []):
             sources.append(SourceCitation(
@@ -78,7 +63,6 @@ async def query_agent(request: AgentRequest):
                 snippet=source.get("snippet")
             ))
         
-        # Convert steps to AgentStep models
         steps = []
         for step_data in result.get("steps", []):
             steps.append(AgentStep(
@@ -90,7 +74,6 @@ async def query_agent(request: AgentRequest):
                 timestamp=step_data.timestamp
             ))
         
-        # Build response
         response = AgentResponse(
             query=result["query"],
             answer=result["answer"],
@@ -98,7 +81,7 @@ async def query_agent(request: AgentRequest):
             sources=sources if request.include_citations else [],
             steps=steps,
             execution_time=result["execution_time"],
-            session_id=request.session_id,
+            session_id=session_id,
             error=None
         )
         
@@ -113,87 +96,79 @@ async def query_agent(request: AgentRequest):
         )
 
 
-async def generate_streaming_response(query: str, max_results: int) -> AsyncGenerator[str, None]:
-    """Generate streaming response for agent execution."""
-    agent = get_agent()
-    
-    # Send initial message
-    yield json.dumps({
-        "type": "start",
-        "message": "Processing your medical research question...",
-        "timestamp": datetime.utcnow().isoformat()
-    }) + "\n"
-    
-    try:
-        # Run agent (in real production, this would be async)
-        result = await asyncio.to_thread(agent.run, query, max_results)
-        
-        # Stream steps
-        for step in result.get("steps", []):
-            yield json.dumps({
-                "type": "step",
-                "step": {
-                    "step_number": step.step_number,
-                    "action": step.action,
-                    "tool_name": step.tool_name,
-                    "observation": step.observation,
-                    "timestamp": step.timestamp.isoformat()
-                }
-            }) + "\n"
-            await asyncio.sleep(0.1)  # Small delay for UX
-        
-        # Stream final answer
-        yield json.dumps({
-            "type": "answer",
-            "data": {
-                "query": result["query"],
-                "answer": result["answer"],
-                "query_type": result.get("query_type"),
-                "sources": result.get("sources", []),
-                "execution_time": result["execution_time"]
-            }
-        }) + "\n"
-        
-        # Send completion
-        yield json.dumps({
-            "type": "complete",
-            "timestamp": datetime.utcnow().isoformat()
-        }) + "\n"
-        
-    except Exception as e:
-        yield json.dumps({
-            "type": "error",
-            "error": str(e),
-            "timestamp": datetime.utcnow().isoformat()
-        }) + "\n"
-
-
-@router.post("/query/stream")
-async def query_agent_stream(request: AgentRequest):
-    """
-    Stream agent responses in real-time.
-    
-    Returns Server-Sent Events (SSE) stream of agent execution.
-    """
-    return StreamingResponse(
-        generate_streaming_response(request.query, request.max_results),
-        media_type="text/event-stream"
-    )
-
-
-@router.get("/tools")
-async def list_tools():
-    """List available medical research tools."""
-    agent = get_agent()
-    
-    tools_info = []
-    for tool in agent.tools:
-        tools_info.append({
-            "name": tool.name,
-            "description": tool.description
-        })
-    
+@router.get("/health")
+async def health_check() -> Dict[str, Any]:
+    """Detailed health check with system info."""
     return {
-        "tools": tools_info,
-        "count": len(tools_info)
+        "status": "healthy",
+        "version": "1.0.0",
+        "components": {
+            "api": "operational",
+            "agent": "operational",
+            "tools": ["pubmed", "fda", "tavily"]
+        }
     }
+
+
+@router.get("/diagram")
+async def get_workflow_diagram(format: str = "png"):
+    """
+    Get visual diagram of the agent workflow
+    
+    Parameters:
+    - format: 'png', 'mermaid', or 'ascii'
+    """
+    try:
+        agent = get_agent()
+        
+        if format == "png":
+            # Generate PNG
+            png_data = agent.graph.get_graph().draw_mermaid_png()
+            return Response(content=png_data, media_type="image/png")
+        
+        elif format == "mermaid":
+            # Generate Mermaid text
+            mermaid_text = agent.graph.get_graph().draw_mermaid()
+            return Response(content=mermaid_text, media_type="text/plain")
+        
+        elif format == "ascii":
+            # Generate ASCII
+            ascii_text = agent.graph.get_graph().draw_ascii()
+            return Response(content=ascii_text, media_type="text/plain")
+        
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid format. Use 'png', 'mermaid', or 'ascii'"
+            )
+    
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to generate diagram: {str(e)}"
+        )
+
+
+@router.get("/diagram/download")
+async def download_diagram():
+    """Download workflow diagram as PNG file"""
+    try:
+        agent = get_agent()
+        png_data = agent.graph.get_graph().draw_mermaid_png()
+        
+        # Save to temp file
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp:
+            tmp.write(png_data)
+            tmp_path = tmp.name
+        
+        return FileResponse(
+            tmp_path,
+            media_type="image/png",
+            filename="medical_research_agent_workflow.png"
+        )
+    
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to generate diagram: {str(e)}"
+        )

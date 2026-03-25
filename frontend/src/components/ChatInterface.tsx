@@ -1,17 +1,17 @@
 /**
  * ChatInterface - Main chat component for medical research queries
  */
-import React, { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, AlertTriangle, TrendingUp } from 'lucide-react';
-import MessageBubble from './MessageBubble';
-import StepViewer from './StepViewer';
-import SourceCard from './SourceCard';
-import apiService from '@/services/api';
-import type { AgentResponse, AgentStep, SourceCitation } from '@/types';
+import React, { useState, useRef, useEffect } from "react";
+import { Send, Loader2, AlertTriangle, TrendingUp } from "lucide-react";
+import MessageBubble from "./MessageBubble";
+import StepViewer from "./StepViewer";
+import SourceCard from "./SourceCard";
+import apiService from "@/services/api";
+import type { AgentResponse, AgentStep, SourceCitation } from "@/types";
 
 interface Message {
   id: string;
-  role: 'user' | 'assistant' | 'error';
+  role: "user" | "assistant" | "error";
   content: string;
   timestamp: string;
   steps?: AgentStep[];
@@ -20,24 +20,25 @@ interface Message {
 }
 
 const EXAMPLE_QUERIES = [
-  'What are the latest treatments for Type 2 diabetes?',
-  'What are the side effects of metformin?',
-  'What does recent research say about Alzheimer\'s prevention?',
-  'Compare mRNA vaccines and traditional vaccines',
+  "What are the latest treatments for Type 2 diabetes?",
+  "What are the side effects of metformin?",
+  "What does recent research say about Alzheimer's prevention?",
+  "Compare mRNA vaccines and traditional vaccines",
 ];
 
 const ChatInterface: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showSteps, setShowSteps] = useState(true);
   const [currentSteps, setCurrentSteps] = useState<AgentStep[]>([]);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Auto-scroll to bottom
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   useEffect(() => {
@@ -51,20 +52,20 @@ const ChatInterface: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const query = input.trim();
     if (!query || isLoading) return;
 
     // Add user message
     const userMessage: Message = {
       id: Date.now().toString(),
-      role: 'user',
+      role: "user",
       content: query,
       timestamp: new Date().toISOString(),
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    setInput('');
+    setInput("");
     setIsLoading(true);
     setCurrentSteps([]);
 
@@ -74,12 +75,17 @@ const ChatInterface: React.FC = () => {
         query,
         max_results: 5,
         include_citations: true,
+        session_id: sessionId,
       });
+
+      if (response.session_id) {
+        setSessionId(response.session_id);
+      }
 
       // Add assistant message
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
-        role: 'assistant',
+        role: "assistant",
         content: response.answer,
         timestamp: new Date().toISOString(),
         steps: response.steps,
@@ -90,12 +96,15 @@ const ChatInterface: React.FC = () => {
       setMessages((prev) => [...prev, assistantMessage]);
       setCurrentSteps([]);
     } catch (error: any) {
-      console.error('Query error:', error);
-      
+      console.error("Query error:", error);
+
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        role: 'error',
-        content: error.response?.data?.detail || error.message || 'Failed to get response from the agent. Please try again.',
+        role: "error",
+        content:
+          error.response?.data?.detail ||
+          error.message ||
+          "Failed to get response from the agent. Please try again.",
         timestamp: new Date().toISOString(),
       };
 
@@ -111,16 +120,16 @@ const ChatInterface: React.FC = () => {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
     }
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
+    <div className="flex flex-col  bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-6 py-4 flex-shrink-0">
+      {/* <header className="bg-white border-b border-gray-200 px-6 py-4 flex-shrink-0">
         <div className="max-w-6xl mx-auto">
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <div className="w-8 h-8 bg-gradient-to-br from-primary-600 to-medical-600 rounded-lg flex items-center justify-center">
@@ -129,13 +138,14 @@ const ChatInterface: React.FC = () => {
             Medical Research Agent
           </h1>
           <p className="text-sm text-gray-600 mt-1">
-            AI-powered medical research assistant with PubMed, drug databases, and clinical knowledge
+            AI-powered medical research assistant with PubMed, drug databases,
+            and clinical knowledge
           </p>
         </div>
-      </header>
+      </header> */}
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-6 py-8">
+      <div className="flex-1 overflow-y-auto px-6 py-1">
         <div className="max-w-6xl mx-auto space-y-8">
           {/* Welcome message */}
           {messages.length === 0 && !isLoading && (
@@ -147,13 +157,15 @@ const ChatInterface: React.FC = () => {
                 Welcome to Medical Research Agent
               </h2>
               <p className="text-gray-600 mb-8 max-w-2xl mx-auto">
-                Ask medical research questions and get evidence-based answers from PubMed,
-                drug databases, and trusted medical sources.
+                Ask medical research questions and get evidence-based answers
+                from PubMed, drug databases, and trusted medical sources.
               </p>
 
               {/* Example queries */}
               <div className="max-w-2xl mx-auto">
-                <p className="text-sm font-medium text-gray-700 mb-3">Try these examples:</p>
+                <p className="text-sm font-medium text-gray-700 mb-3">
+                  Try these examples:
+                </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {EXAMPLE_QUERIES.map((example, index) => (
                     <button
@@ -172,11 +184,15 @@ const ChatInterface: React.FC = () => {
                 <div className="flex gap-3">
                   <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
                   <div className="text-left">
-                    <p className="text-sm font-medium text-yellow-900 mb-1">Medical Disclaimer</p>
+                    <p className="text-sm font-medium text-yellow-900 mb-1">
+                      Medical Disclaimer
+                    </p>
                     <p className="text-xs text-yellow-800">
-                      This tool provides information for research and educational purposes only.
-                      It is not a substitute for professional medical advice, diagnosis, or treatment.
-                      Always consult with qualified healthcare providers for medical decisions.
+                      This tool provides information for research and
+                      educational purposes only. It is not a substitute for
+                      professional medical advice, diagnosis, or treatment.
+                      Always consult with qualified healthcare providers for
+                      medical decisions.
                     </p>
                   </div>
                 </div>
@@ -194,7 +210,7 @@ const ChatInterface: React.FC = () => {
               />
 
               {/* Steps and sources for assistant messages */}
-              {message.role === 'assistant' && (
+              {message.role === "assistant" && (
                 <div className="ml-11 space-y-4">
                   {/* Execution steps */}
                   {showSteps && message.steps && message.steps.length > 0 && (
@@ -209,7 +225,11 @@ const ChatInterface: React.FC = () => {
                       </h3>
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         {message.sources.map((source, index) => (
-                          <SourceCard key={index} source={source} index={index} />
+                          <SourceCard
+                            key={index}
+                            source={source}
+                            index={index}
+                          />
                         ))}
                       </div>
                     </div>
@@ -251,7 +271,7 @@ const ChatInterface: React.FC = () => {
                 disabled={isLoading}
                 rows={1}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none disabled:bg-gray-100 disabled:cursor-not-allowed"
-                style={{ minHeight: '52px', maxHeight: '200px' }}
+                style={{ minHeight: "52px", maxHeight: "200px" }}
               />
             </div>
             <button

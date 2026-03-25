@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     tavily_api_key: Optional[str] = None
     
     # PubMed Configuration
-    pubmed_email: str = "your-email@example.com"  # Required by NCBI
+    pubmed_email: str = "wondem5060@gmail.com"
     pubmed_tool: str = "MedicalResearchAgent"
     pubmed_max_results: int = 10
     
