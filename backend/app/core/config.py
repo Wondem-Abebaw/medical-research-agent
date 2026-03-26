@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     port: int = 8000
     
     # CORS
-    cors_origins: list[str] = ["http://localhost:3000", "http://localhost:5173"]
+    cors_origins: list[str] = ["http://localhost:3000", "http://localhost:5173","https://medical-research-agent-front-end.onrender.com/"]
     
     # AI Model Configuration
     google_api_key: str
