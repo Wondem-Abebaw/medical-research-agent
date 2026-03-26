@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import  { useEffect, useState } from 'react';
 
 interface WorkflowDiagramProps {
   apiUrl?: string;
 }
 
 export default function WorkflowDiagram({ 
-  apiUrl = 'http://localhost:8000/api/v1' 
+  apiUrl = `${process.env.VITE_API_URL }api/v1`
 }: WorkflowDiagramProps) {
   const [diagramUrl, setDiagramUrl] = useState<string>('');
   const [loading, setLoading] = useState(true);
