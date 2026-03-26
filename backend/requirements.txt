@@ -41,7 +41,7 @@ sqlalchemy==2.0.25
 structlog==24.1.0
 
 # Visualization (Optional - for workflow diagrams)
-pygraphviz>=1.11
-grandalf>=0.8
+#pygraphviz>=1.11
+#grandalf>=0.8
 # NOTE: Uncomment above if you want graph visualization
 # Requires: sudo apt-get install graphviz graphviz-dev
