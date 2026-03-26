@@ -3,6 +3,7 @@ Application configuration management using Pydantic Settings.
 """
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional
+import os
 
 
 class Settings(BaseSettings):
@@ -41,6 +42,12 @@ class Settings(BaseSettings):
     # Rate Limiting
     rate_limit_calls: int = 100
     rate_limit_period: int = 60  # seconds
+
+        # LangSmith settings 
+    langchain_tracing_v2: bool = False
+    langchain_api_key: str = ""
+    langchain_project: str = "medical-research-agent"
+    langchain_endpoint: str = "https://api.smith.langchain.com"
     
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -52,3 +59,9 @@ class Settings(BaseSettings):
 
 # Global settings instance
 settings = Settings()
+# optional(if needed)
+if settings.langchain_tracing_v2 and settings.langchain_api_key:
+    os.environ["LANGCHAIN_TRACING_V2"] = "true"
+    os.environ["LANGCHAIN_API_KEY"] = settings.langchain_api_key
+    os.environ["LANGCHAIN_PROJECT"] = settings.langchain_project
+    os.environ["LANGCHAIN_ENDPOINT"] = settings.langchain_endpoint
