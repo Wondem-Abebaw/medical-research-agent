@@ -1,47 +1,33 @@
 # ============================================
-# Medical Research Agent - Requirements
-# Python 3.12
-# Updated: March 2026
+# Medical Research Agent - Production
+# Minimal dependencies for Render deployment
 # ============================================
 
 # Core Framework
-fastapi==0.110.0  # Slightly newer for better Pydantic 2.x support
-uvicorn[standard]==0.27.0
-python-multipart==0.0.6
+fastapi
+uvicorn[standard]
+python-multipart
 
-# AI/ML Stack (Updated versions that work)
-langchain>=1.2.0
-langchain-core>=1.2.0
-langchain-community>=0.4.0
-langchain-google-genai>=4.2.0
-langgraph>=1.1.0
-google-generativeai>=0.8.0
-
-# Observability (Optional but recommended)
-langsmith>=0.1.0
+# AI/ML Stack
+langchain
+langchain-core
+langchain-community
+langchain-google-genai
+langgraph
+google-generativeai
 
 # Medical Research Tools
-biopython==1.83
-tavily-python==0.3.0
+biopython
+tavily-python
 
 # HTTP Clients
-requests>=2.32.5
-httpx>=0.27.0
-aiohttp==3.9.1
+requests
+httpx
 
 # Data Models & Config
-pydantic>=2.7.4
-pydantic-settings>=2.2.0
-python-dotenv==1.0.0
-
-# Database (for conversation memory)
-sqlalchemy==2.0.25
+pydantic
+pydantic-settings
+python-dotenv
 
 # Logging
-structlog==24.1.0
-
-# Visualization (Optional - for workflow diagrams)
-#pygraphviz>=1.11
-#grandalf>=0.8
-# NOTE: Uncomment above if you want graph visualization
-# Requires: sudo apt-get install graphviz graphviz-dev
+structlog
