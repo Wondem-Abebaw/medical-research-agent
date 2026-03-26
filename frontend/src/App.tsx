@@ -1,8 +1,8 @@
 /**
  * Main App component
  */
-import React, { useEffect, useState } from 'react';
-import { AlertCircle, CheckCircle2, Loader2, TrendingUp } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { AlertCircle, Loader2, TrendingUp } from 'lucide-react';
 import ChatInterface from './components/ChatInterface';
 import apiService from './services/api';
 import WorkflowDiagram from './components/WorkflowDiagram';

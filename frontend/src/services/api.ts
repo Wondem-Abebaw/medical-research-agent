@@ -14,7 +14,7 @@ class ApiService {
   private baseURL: string;
 
   constructor() {
-    this.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    this.baseURL = process.env.VITE_API_URL || 'https://medical-research-agent-0r0x.onrender.com';
     
     this.client = axios.create({
       baseURL: this.baseURL,
